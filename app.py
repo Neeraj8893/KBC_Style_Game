@@ -1,8 +1,12 @@
 from flask import Flask, jsonify, request, render_template, send_from_directory, flash
 import qrcode
 import os
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
+socketio = SocketIO(app)
+shared_variable = "Initial Value"
+
 
 # Directory to save the QR code images
 QR_CODE_DIR = 'static/qr_codes'
@@ -26,6 +30,12 @@ questions = [
         'answer': 'B'
     }
 ]
+
+@socketio.on('update_variable')
+def handle_update(data):
+    global shared_variable
+    shared_variable = data['new_value']
+    emit('sync_variable', {'value': shared_variable}, broadcast=True)
 
 @app.route('/')
 def quiz():
@@ -67,7 +77,6 @@ def get_questions():
 
 @app.route('/losePage')
 def lose_Page():
-    print("lose")
     return render_template('lose.html')
 
 
@@ -89,9 +98,9 @@ def submit_quiz():
 def generate_qr_code():
     """Generate a QR code for the quiz link and save it as an image."""
      
-    # link = "http://localhost:5000"  # Modify to your production URL if needed
-    local_ip = '192.168.1.5'  # Replace this with your actual local IP address
-    link = f"http://{local_ip}:5000/mobileName"
+   
+    
+    link = f"https://kbc-style-game.onrender.com/mobileName"
     
     qr = qrcode.QRCode(
         version=1,
@@ -142,4 +151,5 @@ def update_answer():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
+   
