@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KBC-style game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .qr-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .qr-container img {
+            width: 200px;
+            height: 200px;
+            display: none; /* Initially hide the QR code */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KBC-style game</h1>
+        <div id="quiz"></div>
+        <button id="submit-btn" onclick="submitQuiz()">Submit</button>
+        <div id="result"></div>
+
+        <!-- QR Code section -->
+        <div class="qr-container">
+            <button onclick="generateQRCode()">Generate QR Code</button>
+            <img id="qr-code" src="" alt="QR Code to join the quiz">
+        </div>
+    </div>
+
+    <script>
+        // Fetch and render the questions
+        let index=0
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchQuestions();
+        });
+
+        function fetchQuestions() {
+            fetch('/questions')
+                .then(response => response.json())
+                .then(data => {
+                    renderQuestions(data);
+                });
+        }
+
+        function renderQuestions(questions) {
+            const quizDiv = document.getElementById('quiz');
+            quizDiv.innerHTML = '';
+           // let index =0
+            let q= questions[0]  
+            // questions.forEach((q, index) => {
+            const questionDiv = document.createElement('div');
+            questionDiv.classList.add('question');
+
+            const questionLabel = document.createElement('p');
+            questionLabel.innerHTML = `<strong>${index + 1}. ${q.question}</strong>`;
+            questionDiv.appendChild(questionLabel);
+
+                // q.options.forEach(option => {
+                //     const optionDiv = document.createElement('div');
+                //     const optionInput = document.createElement('input');
+                //     optionInput.type = 'radio';
+                //     optionInput.name = `question-${index}`;
+                //     optionInput.value = option[0];  // A, B, C, D
+                //     optionInput.required = true;
+
+                //     const optionLabel = document.createElement('label');
+                //     optionLabel.innerHTML = option;
+
+                //     optionDiv.appendChild(optionInput);
+                //     optionDiv.appendChild(optionLabel);
+                //     questionDiv.appendChild(optionDiv);
+                //});
+
+            quizDiv.appendChild(questionDiv);
+            //});
+        }
+
+        function submitQuiz() {
+            const questions = document.querySelectorAll('.question');
+            const answers = [];
+            index++;
+            
+
+            // Collect the selected answers
+            questions.forEach((q, index) => {
+                const selectedOption = document.querySelector(`input[name="question-${index}"]:checked`);
+                if (selectedOption) {
+                    answers.push(selectedOption.value);  // A, B, C, D
+                }
+            });
+
+            // Send the answers to the server using POST
+            fetch('/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ answers })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayResult(data.correct_count, data.total);
+            });
+        }
+
+        function displayResult(correctCount) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<h2>Congratulations ${correctCount}, You have given right answer.</h2>`;
+        }
+
+        function generateQRCode() {
+            // Generate QR code and display it
+            fetch('/generate_qr_code')
+                .then(response => response.json())
+                .then(data => {
+                    const qrCodeImg = document.getElementById('qr-code');
+                    qrCodeImg.src = '/qr_code/quiz_qr_code.png'; // Set the src to the QR code path
+                    qrCodeImg.style.display = 'block'; // Show the QR code image
+                });
+        }
+    </script>
+</body>
+</html>
