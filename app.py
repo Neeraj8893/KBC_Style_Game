@@ -2,40 +2,45 @@ from flask import Flask, jsonify, request, render_template, send_from_directory,
 import qrcode
 import os
 from flask_socketio import SocketIO, emit
+import time
+import threading
 
 app = Flask(__name__)
 socketio = SocketIO(app)
-shared_variable = "Initial Value"
-
 
 # Directory to save the QR code images
 QR_CODE_DIR = 'static/qr_codes'
 os.makedirs(QR_CODE_DIR, exist_ok=True)
-# Hardcoded questions and their correct answers
+
 players={}
+# Hardcoded questions and their correct answers
 questions = [
     {
-        'question': "What is the capital of France?",
-        'options': ['A. Berlin', 'B. Madrid', 'C. Paris', 'D. Rome'],
+        'question': "What is the official currency of Japan?",
+        'options': ['A. Won', 'B. Yuan', 'C. Yen', 'D. Dollar'],
         'answer': 'C'
     },
     {
-        'question': "Which planet is known as the Red Planet?",
-        'options': ['A. Earth', 'B. Mars', 'C. Jupiter', 'D. Venus'],
+        'question': "What is the name of the process by which plants convert sunlight into energy?",
+        'options': ['A. Respiration', 'B. Photosynthesis', 'C. Oxidation', 'D. Evolution'],
         'answer': 'B'
     },
     {
-        'question': "Who wrote 'Hamlet'?",
-        'options': ['A. Charles Dickens', 'B. William Shakespeare', 'C. Mark Twain', 'D. Leo Tolstoy'],
-        'answer': 'B'
+        'question': "Which river is the longest in the world?",
+        'options': ['A. Amazon', 'B. Mississippi', 'C. Nile', 'D. Yangtze'],
+        'answer': 'C'
+    },
+        {
+        'question': "What is the next prime number after 5?",
+        'options': ['A. 7', 'B. 6', 'C. 9', 'D. 11'],
+        'answer': 'A'
+    },
+        {
+        'question': "Which of these animals cannot jump?",
+        'options': ['A. Cat', 'B. Horse', 'C. Kangaroo', 'D. Snake'],
+        'answer': 'D'
     }
 ]
-
-@socketio.on('update_variable')
-def handle_update(data):
-    global shared_variable
-    shared_variable = data['new_value']
-    emit('sync_variable', {'value': shared_variable}, broadcast=True)
 
 @app.route('/')
 def quiz():
@@ -51,19 +56,20 @@ def submit_name():
     name1 = request.form.get('name')
     
     players[name1]=0
-    print(players[name1])
-    print(players.items())
-   # if name:
-        # Store the name (you can save it to a database or file if needed)
-        # Here we simply flash a message and redirect to the mobile route
-        #flash(f"Welcome, {name}!", "success")
-        #return redirect(url_for('mobile'))
-    #else:
-        #flash("Please enter a name.", "error")
-        #return redirect(url_for('mobile'))
     return render_template('mobile.html',name=name1)
 
-    
+@app.route('/players')
+def get_players():
+    return jsonify(players)    
+
+@app.route('/results')
+def results():
+    return render_template('results.html')   
+
+@app.route('/thanks')
+def thanks():
+    return render_template('thanks.html')   
+
 
 @app.route('/mobile')
 def quizMobile():
@@ -79,28 +85,14 @@ def get_questions():
 def lose_Page():
     return render_template('lose.html')
 
-
-@app.route('/submit', methods=['POST'])
-def submit_quiz():
-    """Endpoint to process quiz results."""
-    data = request.json
-    selected_answers = data.get('answers', [])
-    correct_count = 0
-
-    # Calculate how many answers are correct
-    for i, answer in enumerate(selected_answers):
-        if answer == questions[i]['answer']:
-            correct_count += 1
-
-    return jsonify({'correct_count': correct_count, 'total': len(questions)})
-
 @app.route('/generate_qr_code')
 def generate_qr_code():
     """Generate a QR code for the quiz link and save it as an image."""
-     
-   
+    players={}
+    local_ip = '192.168.1.5'  # Replace this with your actual local IP address
+    link = f"http://{local_ip}:5000/mobileName"
+    # link = f"https://kbc-style-game.onrender.com/mobileName"
     
-    link = f"https://kbc-style-game.onrender.com/mobileName"
     
     qr = qrcode.QRCode(
         version=1,
@@ -125,31 +117,28 @@ def qr_code(filename):
     """Serve the QR code image."""
     return send_from_directory(QR_CODE_DIR, filename)
 
-#if __name__ == '__main__':
- #   app.run(debug=True)
 
 @app.route('/update_answer', methods=['POST'])
 def update_answer():
-    print("Inside Update Answer")
     """Update player's answer."""
     
     data = request.get_json()  # Get JSON data sent from frontend
     name = data['name']
-   
-    print(name)
+    index = data['i']
     players[name]=players[name]+1
-    print("Your score")
-    print(players)
-    
+    socketio.emit('variable_change', {'value': name,'index':data['i']+1})  # Notify clients
+    socketio.emit('timer', {'value': 500})  # Notify clients
+
     # Update the player's answer in the dictionary
     if name in players:
-        #players[name]['answer'] = answer
-      
         return jsonify({"status": "success", "message": f"Answer updated for {name}"})
     else:
         return jsonify({"status": "error", "message": "Name not found"}), 404
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
    
+if __name__ == '__main__':
+    socketio.run(app,host='0.0.0.0', port=5000, debug=True)
+
+
+# if __name__ == '__main__':
+#     socketio.run(app,debug=True)

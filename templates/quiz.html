@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,21 +10,34 @@
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 20px;
+            background-color: #19414a;
         }
+
         .container {
             max-width: 600px;
             margin: auto;
             padding: 20px;
-            border: 1px solid #ccc;
+            border: 6px solid #71c0d1;
             border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            background-color: white;
         }
+        .heading{
+            text-decoration: underline;
+            font-weight: bold;
+            font-size: 45px;
+            font-style: italic;
+        }
+
         .question {
             margin-bottom: 20px;
+            font-size: 25px;
+            color: #2b3c40;
         }
+
         label {
             font-weight: bold;
         }
+
         button {
             background-color: #4CAF50;
             color: white;
@@ -32,39 +46,77 @@
             border: none;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
         .qr-container {
             text-align: center;
             margin-top: 20px;
+            font-weight: bold;
         }
+
         .qr-container img {
-            width: 200px;
-            height: 200px;
-            display: none; /* Initially hide the QR code */
+            width: 230px;
+            height: 230px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;      
+        }
+
+        .List {
+            list-style-type: none;
+            font-weight: bold;
+            font-size: 20px;
         }
     </style>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 </head>
+
 <body>
     <div class="container">
-        <h1>KBC-style game</h1>
+        <h1 class="heading">KBC-Style Game</h1>
         <div id="quiz"></div>
-        <button id="submit-btn" onclick="submitQuiz()">Submit</button>
-        <div id="result"></div>
 
         <!-- QR Code section -->
         <div class="qr-container">
-            <button onclick="generateQRCode()">Generate QR Code</button>
             <img id="qr-code" src="" alt="QR Code to join the quiz">
+            <p>Scan this QR to join the game</p>
         </div>
+        <ul id="myList" class="List"></ul>
     </div>
 
     <script>
+        let index = 0;
+
+        function onVariableChange(newValue) {
+            displayResult(newValue)
+            setTimeout(clearList, 5000);  // Call clearList() after 5 seconds (5000ms)
+
+
+            function clearList() {
+                const list = document.getElementById('myList');
+                list.innerHTML = '';  // Clear the list
+                fetchQuestions()
+            }
+        }
+
+        // Connect to the WebSocket server
+        var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+        //Listen for 'variable_change' events from the server
+        socket.on('variable_change', function (data) {
+            const newValue = data.value;
+            index = data.index;
+            onVariableChange(newValue);  // Call the JS function
+        });
+
         // Fetch and render the questions
-        let index=0
-        document.addEventListener("DOMContentLoaded", function() {
+
+        document.addEventListener("DOMContentLoaded", function () {
             fetchQuestions();
+            generateQRCode();
         });
 
         function fetchQuestions() {
@@ -78,67 +130,29 @@
         function renderQuestions(questions) {
             const quizDiv = document.getElementById('quiz');
             quizDiv.innerHTML = '';
-           // let index =0
-            let q= questions[0]  
-            // questions.forEach((q, index) => {
-            const questionDiv = document.createElement('div');
-            questionDiv.classList.add('question');
+            // let index =0
+            let q = questions[index]
+            let length = questions.length
 
-            const questionLabel = document.createElement('p');
-            questionLabel.innerHTML = `<strong>${index + 1}. ${q.question}</strong>`;
-            questionDiv.appendChild(questionLabel);
+            if (index > length - 1) {
+                window.location.href = '/results';
+            } else {
+                const questionDiv = document.createElement('div');
+                questionDiv.classList.add('question');
 
-                // q.options.forEach(option => {
-                //     const optionDiv = document.createElement('div');
-                //     const optionInput = document.createElement('input');
-                //     optionInput.type = 'radio';
-                //     optionInput.name = `question-${index}`;
-                //     optionInput.value = option[0];  // A, B, C, D
-                //     optionInput.required = true;
-
-                //     const optionLabel = document.createElement('label');
-                //     optionLabel.innerHTML = option;
-
-                //     optionDiv.appendChild(optionInput);
-                //     optionDiv.appendChild(optionLabel);
-                //     questionDiv.appendChild(optionDiv);
-                //});
-
-            quizDiv.appendChild(questionDiv);
-            //});
-        }
-
-        function submitQuiz() {
-            const questions = document.querySelectorAll('.question');
-            const answers = [];
-            index++;
-            
-
-            // Collect the selected answers
-            questions.forEach((q, index) => {
-                const selectedOption = document.querySelector(`input[name="question-${index}"]:checked`);
-                if (selectedOption) {
-                    answers.push(selectedOption.value);  // A, B, C, D
+                const questionLabel = document.createElement('p');
+                questionLabel.innerHTML = `<strong>Q${index + 1}. ${q.question}</strong>`;
+                questionDiv.appendChild(questionLabel);
+                quizDiv.appendChild(questionDiv);
                 }
-            });
-
-            // Send the answers to the server using POST
-            fetch('/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ answers })
-            })
-            .then(response => response.json())
-            .then(data => {
-                displayResult(data.correct_count, data.total);
-            });
         }
 
-        function displayResult(correctCount) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = `<h2>Congratulations ${correctCount}, You have given right answer.</h2>`;
+      
+        function displayResult(name) {
+            const list = document.getElementById('myList');
+            const newItem = document.createElement('li');
+            newItem.textContent = `Congratulations ${name}, You have given right answer.`;
+            list.appendChild(newItem);
         }
 
         function generateQRCode() {
@@ -153,4 +167,5 @@
         }
     </script>
 </body>
+
 </html>

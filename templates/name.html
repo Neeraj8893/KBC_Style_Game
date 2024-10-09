@@ -5,23 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enter Name</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body{
+          background-color: #19414a;
+        }
+        .container{
+          color: #92e86b;
+        }
+        #message-container {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="mt-5">Enter Your Name</h1>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-        <form action="/submit_name" method="POST" class="mt-4">
+        <h1 class="heading mt-5">Join With Name/Username</h1>
+        <div id="message-container"></div>
+        <form id="nameForm" class="mt-4" action="/submit_name" method="POST">
             <div class="form-group">
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" class="form-control" required>
+                <input type="text" id="name" name="name" placeholder= "Enter your name/username" class="form-control" required>
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="btn btn-primary">Start the Game</button>
         </form>
     </div>
 </body>
