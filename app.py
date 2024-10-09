@@ -89,9 +89,7 @@ def lose_Page():
 def generate_qr_code():
     """Generate a QR code for the quiz link and save it as an image."""
     players={}
-    local_ip = '192.168.1.5'  # Replace this with your actual local IP address
-    link = f"http://{local_ip}:5000/mobileName"
-    # link = f"https://kbc-style-game.onrender.com/mobileName"
+    link = f"https://kbc-style-game.onrender.com/mobileName"
     
     
     qr = qrcode.QRCode(
@@ -135,10 +133,5 @@ def update_answer():
     else:
         return jsonify({"status": "error", "message": "Name not found"}), 404
 
-   
 if __name__ == '__main__':
-    socketio.run(app,host='0.0.0.0', port=5000, debug=True)
-
-
-# if __name__ == '__main__':
-#     socketio.run(app,debug=True)
+    socketio.run(app,debug=True)
